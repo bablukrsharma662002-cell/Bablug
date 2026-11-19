@@ -1,0 +1,6 @@
+{
+  "name": "StageCraft",
+  "description": "Multi-character 2D animation studio with independent character rigs, facial expressions, lip-sync dialogue, props, interactions, layer management, and a multi-track keyframe timeline.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

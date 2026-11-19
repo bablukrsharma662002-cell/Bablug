@@ -1,0 +1,141 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidHexColor(val) {
+      return val is string && val.size() >= 4 && val.size() <= 12 && val.matches('^#[0-9a-fA-F]{6,8}$');
+    }
+
+    function isValidCharacterTemplate(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 60 &&
+             isValidHexColor(data.skinColorHex) &&
+             isValidHexColor(data.hairColorHex) &&
+             isValidHexColor(data.outfitColorHex) &&
+             isValidHexColor(data.pantsColorHex) &&
+             isValidHexColor(data.accentColorHex) &&
+             data.hairStyle is string && data.hairStyle in ['SPIKY', 'BOB', 'CURLY', 'BUN', 'CAP', 'SLEEK'] &&
+             data.accessory is string && data.accessory in ['NONE', 'GLASSES', 'SCARF', 'CROWN', 'HEADPHONES'] &&
+             data.voicePitch is number && data.voicePitch >= 0.5 && data.voicePitch <= 2.0 &&
+             data.voiceRate is number && data.voiceRate >= 0.5 && data.voiceRate <= 2.0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidAnimationScene(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 80 &&
+             data.backdrop is string && data.backdrop in ['PARK', 'CAFE', 'STUDIO', 'NIGHT_SKY'] &&
+             data.durationMs is int && data.durationMs >= 2000 && data.durationMs <= 60000 &&
+             data.characters is list && data.characters.size() <= 50 &&
+             (data.characters.size() == 0 || data.characters[0] is map) &&
+             data.props is list && data.props.size() <= 50 &&
+             (data.props.size() == 0 || data.props[0] is map) &&
+             data.interactions is list && data.interactions.size() <= 100 &&
+             (data.interactions.size() == 0 || data.interactions[0] is map) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // User-scoped Character Library
+    match /users/{userId}/characters/{characterId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(characterId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(characterId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'name', 'skinColorHex', 'hairColorHex',
+                         'outfitColorHex', 'pantsColorHex', 'accentColorHex',
+                         'hairStyle', 'accessory', 'voicePitch', 'voiceRate',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'name', 'skinColorHex', 'hairColorHex',
+                         'outfitColorHex', 'pantsColorHex', 'accentColorHex',
+                         'hairStyle', 'accessory', 'voicePitch', 'voiceRate',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidCharacterTemplate(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(characterId) &&
+                       isValidCharacterTemplate(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       (
+                         // Action: Edit character appearance / voice / name
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'name', 'skinColorHex', 'hairColorHex',
+                           'outfitColorHex', 'pantsColorHex', 'accentColorHex',
+                           'hairStyle', 'accessory', 'voicePitch', 'voiceRate',
+                           'updatedAt'
+                         ])
+                       );
+
+      allow delete: if isOwner(userId) && isValidId(characterId);
+    }
+
+    // User-scoped Animation Scenes
+    match /users/{userId}/scenes/{sceneId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(sceneId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(sceneId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'title', 'backdrop', 'durationMs',
+                         'characters', 'props', 'interactions',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'title', 'backdrop', 'durationMs',
+                         'characters', 'props', 'interactions',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidAnimationScene(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(sceneId) &&
+                       isValidAnimationScene(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       (
+                         // Action: Save full scene content or rename/backdrop edit
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'title', 'backdrop', 'durationMs',
+                           'characters', 'props', 'interactions',
+                           'updatedAt'
+                         ])
+                       );
+
+      allow delete: if isOwner(userId) && isValidId(sceneId);
+    }
+  }
+}

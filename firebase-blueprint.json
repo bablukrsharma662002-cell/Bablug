@@ -1,0 +1,153 @@
+{
+  "entities": {
+    "CharacterTemplate": {
+      "title": "CharacterTemplate",
+      "description": "Reusable saved character appearance and voice profile stored in the user's character library.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated owner UID matching request.auth.uid"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the character (1-60 chars)"
+        },
+        "skinColorHex": {
+          "type": "string",
+          "description": "Hex color string for character skin tone"
+        },
+        "hairColorHex": {
+          "type": "string",
+          "description": "Hex color string for character hair color"
+        },
+        "outfitColorHex": {
+          "type": "string",
+          "description": "Hex color string for upper body outfit"
+        },
+        "pantsColorHex": {
+          "type": "string",
+          "description": "Hex color string for lower body outfit"
+        },
+        "accentColorHex": {
+          "type": "string",
+          "description": "Hex color string for timeline track and highlight accents"
+        },
+        "hairStyle": {
+          "type": "string",
+          "description": "Hair style identifier",
+          "enum": ["SPIKY", "BOB", "CURLY", "BUN", "CAP", "SLEEK"]
+        },
+        "accessory": {
+          "type": "string",
+          "description": "Wearable accessory identifier",
+          "enum": ["NONE", "GLASSES", "SCARF", "CROWN", "HEADPHONES"]
+        },
+        "voicePitch": {
+          "type": "number",
+          "description": "TTS voice pitch multiplier (0.5 to 2.0)"
+        },
+        "voiceRate": {
+          "type": "number",
+          "description": "TTS speech rate multiplier (0.5 to 2.0)"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp populated via FieldValue.serverTimestamp()"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp populated via FieldValue.serverTimestamp()"
+        }
+      },
+      "required": [
+        "userId",
+        "name",
+        "skinColorHex",
+        "hairColorHex",
+        "outfitColorHex",
+        "pantsColorHex",
+        "accentColorHex",
+        "hairStyle",
+        "accessory",
+        "voicePitch",
+        "voiceRate",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AnimationScene": {
+      "title": "AnimationScene",
+      "description": "Multi-character 2D animation scene containing independent character layers, timeline clips, keyframes, props, and character interactions.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated owner UID matching request.auth.uid"
+        },
+        "title": {
+          "type": "string",
+          "description": "Scene title (1-80 chars)"
+        },
+        "backdrop": {
+          "type": "string",
+          "description": "Stage backdrop preset identifier",
+          "enum": ["PARK", "CAFE", "STUDIO", "NIGHT_SKY"]
+        },
+        "durationMs": {
+          "type": "integer",
+          "description": "Total timeline duration in milliseconds (2000 to 60000)"
+        },
+        "characters": {
+          "type": "array",
+          "description": "Native list of independent character layer and timeline track maps"
+        },
+        "props": {
+          "type": "array",
+          "description": "Native list of interactive stage prop maps"
+        },
+        "interactions": {
+          "type": "array",
+          "description": "Native list of character-to-character and character-to-prop interaction maps"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp populated via FieldValue.serverTimestamp()"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp populated via FieldValue.serverTimestamp()"
+        }
+      },
+      "required": [
+        "userId",
+        "title",
+        "backdrop",
+        "durationMs",
+        "characters",
+        "props",
+        "interactions",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/characters/{characterId}": {
+      "schema": {
+        "$ref": "#/entities/CharacterTemplate"
+      },
+      "description": "User-scoped saved character library"
+    },
+    "/users/{userId}/scenes/{sceneId}": {
+      "schema": {
+        "$ref": "#/entities/AnimationScene"
+      },
+      "description": "User-scoped multi-character animation scenes"
+    }
+  }
+}
